@@ -335,7 +335,7 @@ function buildRow() {
   if (seasonEl.checked) line = 'Season: ' + line;
 
   const folder = photoFolderEl.value.trim();
-  const photoPath = folder ? `${folder}\\${playerSlug(playerEl.value)}.jpg` : '';
+  const photoPath = folder ? `${folder}\\${playerSlug(playerEl.value)}.png` : '';
 
   return [
     playerEl.value,
