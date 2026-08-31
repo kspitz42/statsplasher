@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PTV Quick Stats - 5 Player</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --bg:#101619;
+    --panel:#1a2327;
+    --panel2:#11181b;
+    --line:#304046;
+    --text:#eef3f5;
+    --muted:#92a4ab;
+    --accent:#62b6a6;
+    --accent-dark:#35766b;
+    --danger:#e58a8a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    padding:16px;
+  }
+  .app{
+    max-width:760px;
+    margin:0 auto;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:18px;
+  }
+  h1{margin:0;text-align:center;font-size:21px;font-weight:750;letter-spacing:.02em}
+  .sub{text-align:center;color:var(--muted);font-size:12px;margin:5px 0 18px}
+  .section{margin:0 0 18px}
+  .section-title{
+    color:var(--muted);
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    margin:0 0 8px;
+  }
+  .player-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:7px;
+  }
+  button{
+    font:inherit;
+    color:var(--text);
+    border:1px solid var(--line);
+    background:#141d21;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:700;
+    touch-action:manipulation;
+  }
+  button:hover{border-color:var(--accent)}
+  button.active{
+    background:var(--accent-dark);
+    border-color:var(--accent);
+    box-shadow:0 0 0 1px rgba(98,182,166,.2) inset;
+  }
+  .player-btn{
+    min-height:62px;
+    padding:8px 4px;
+    font-size:12px;
+    line-height:1.15;
+  }
+  .player-btn .first{display:block;font-size:10px;font-weight:600;color:#c2d0d4;margin-bottom:2px}
+  .player-btn .last{display:block;font-size:12px}
+  .stat-pair{
+    display:grid;
+    grid-template-columns:1fr 108px;
+    gap:8px;
+    align-items:stretch;
+    margin-bottom:12px;
+  }
+  .stat-buttons{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:7px;
+  }
+  .stat-btn{min-height:48px;padding:7px 5px;font-size:12px;line-height:1.1}
+  input[type=text]{
+    width:100%;
+    min-height:48px;
+    background:var(--panel2);
+    border:1px solid var(--line);
+    border-radius:8px;
+    color:var(--text);
+    font:inherit;
+    font-size:18px;
+    font-weight:700;
+    padding:9px 10px;
+    outline:none;
+  }
+  input[type=text]:focus{border-color:var(--accent)}
+  .value-input{text-align:center}
+  .season-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:7px;
+  }
+  .season-btn{min-height:44px;padding:7px 5px;font-size:12px}
+  #customSeasonWrap{display:none;margin-top:8px}
+  #customSeason{font-size:14px;font-weight:600;text-align:left}
+  .preview{
+    background:#0c1215;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:12px;
+    min-height:68px;
+    font-family:"SF Mono","Consolas","Menlo",monospace;
+    font-size:14px;
+    line-height:1.45;
+    color:var(--accent);
+    white-space:pre-line;
+  }
+  .publish-btn{
+    width:100%;
+    min-height:56px;
+    background:var(--accent-dark);
+    border-color:var(--accent);
+    font-size:17px;
+    letter-spacing:.02em;
+    margin-top:2px;
+  }
+  .publish-btn:disabled{opacity:.5;cursor:not-allowed}
+  .secondary{
+    width:100%;
+    padding:10px;
+    font-size:13px;
+    color:#d7e1e4;
+  }
+  .status{min-height:18px;text-align:center;color:var(--muted);font-size:12px;margin-top:10px}
+  .status.ok{color:var(--accent)}
+  .status.err{color:var(--danger)}
+  details{
+    background:#141c20;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:14px;
+  }
+  summary{cursor:pointer;color:var(--muted);font-size:12px;font-weight:650}
+  .setup-grid{display:grid;gap:10px;margin-top:12px}
+  .setup-field label{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+  .setup-field input{font-size:12px;min-height:40px;font-weight:500}
+  .hint{font-size:10px;color:var(--muted);line-height:1.35;margin-top:4px}
+  .tiny-note{text-align:center;color:var(--muted);font-size:10px;margin-top:7px}
+
+  @media (max-width:560px){
+    body{padding:8px}
+    .app{padding:12px;border-radius:10px}
+    .player-grid{gap:4px}
+    .player-btn{min-height:58px;padding:6px 2px}
+    .player-btn .first{font-size:8px}
+    .player-btn .last{font-size:10px}
+    .stat-pair{grid-template-columns:1fr 82px;gap:6px}
+    .stat-buttons{gap:5px}
+    .stat-btn{font-size:10px;padding:6px 3px}
+    .season-grid{gap:5px}
+    .season-btn{font-size:10px;padding:6px 3px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>PTV Quick Stats</h1>
+  <div class="sub">Sign in, select the stats, and publish</div>
+
+  <!-- Embedded configuration for broadcaster/friend use. Nothing to enter manually. -->
+  <div id="setupPanel" style="display:none;">
+    <input type="hidden" id="clientId">
+    <input type="hidden" id="sheetUrl">
+    <input type="hidden" id="sheetName">
+    <input type="hidden" id="photoFolder">
+  </div>
+
+  <button id="signInBtn" class="secondary">Sign in with Google</button>
+
+  <div class="section" style="margin-top:18px">
+    <div class="section-title">Player</div>
+    <div class="player-grid" id="playerButtons">
+      <button class="player-btn" data-player="Colton Wall"><span class="first">Colton</span><span class="last">Wall</span></button>
+      <button class="player-btn" data-player="Benji Weis"><span class="first">Benji</span><span class="last">Weis</span></button>
+      <button class="player-btn" data-player="Brooks Dobberstein"><span class="first">Brooks</span><span class="last">Dobberstein</span></button>
+      <button class="player-btn" data-player="Brady Sandvik"><span class="first">Brady</span><span class="last">Sandvik</span></button>
+      <button class="player-btn" data-player="Boden Behrens"><span class="first">Boden</span><span class="last">Behrens</span></button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Stat 1 / Value 1</div>
+    <div class="stat-pair">
+      <div class="stat-buttons" data-group="stat1">
+        <button class="stat-btn" data-value="TD">TD</button>
+        <button class="stat-btn" data-value="Rush Yds">Rush Yds</button>
+        <button class="stat-btn" data-value="Receiving YDS">Receiving YDS</button>
+      </div>
+      <input class="value-input" type="text" id="value1" placeholder="Value 1">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Stat 2 / Value 2</div>
+    <div class="stat-pair">
+      <div class="stat-buttons" data-group="stat2">
+        <button class="stat-btn" data-value="TD">TD</button>
+        <button class="stat-btn" data-value="Rush Yds">Rush Yds</button>
+        <button class="stat-btn" data-value="Receiving YDS">Receiving YDS</button>
+      </div>
+      <input class="value-input" type="text" id="value2" placeholder="Value 2">
+    </div>
+    <div class="tiny-note">Tap an active stat button again to clear it.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Season</div>
+    <div class="season-grid" id="seasonButtons">
+      <button class="season-btn" data-season="2025">2025 Season</button>
+      <button class="season-btn" data-season="2026">2026 Season</button>
+      <button class="season-btn" data-season="Last Week">Last Week</button>
+      <button class="season-btn" data-season="__custom__">Custom</button>
+    </div>
+    <div id="customSeasonWrap">
+      <input type="text" id="customSeason" maxlength="100" placeholder="Custom season text">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Preview</div>
+    <div class="preview" id="preview"></div>
+  </div>
+
+  <button id="publishBtn" class="publish-btn">PUBLISH TO GOOGLE SHEET</button>
+  <div class="status" id="status">Not signed in yet.</div>
+</div>
+
+<script>
+const PLAYERS = ['Colton Wall','Benji Weis','Brooks Dobberstein','Brady Sandvik','Boden Behrens'];
+const DEFAULT_CLIENT_ID = '349315213439-h4q0prsteof79gtsnfom53jft0m2tejv.apps.googleusercontent.com';
+const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1DMNxeo85_YkDZiR3s518uB-BE4LOziYhX9jjidoN9_k/edit?usp=sharing';
+const DEFAULT_SHEET_NAME = 'Sheet1';
+const DEFAULT_PHOTO_FOLDER = 'C:\\StatApp\\photos';
+
+const clientIdEl = document.getElementById('clientId');
+const sheetUrlEl = document.getElementById('sheetUrl');
+const sheetNameEl = document.getElementById('sheetName');
+const photoFolderEl = document.getElementById('photoFolder');
+const setupPanel = document.getElementById('setupPanel');
+const signInBtn = document.getElementById('signInBtn');
+const value1El = document.getElementById('value1');
+const value2El = document.getElementById('value2');
+const customSeasonEl = document.getElementById('customSeason');
+const customSeasonWrapEl = document.getElementById('customSeasonWrap');
+const previewEl = document.getElementById('preview');
+const publishBtn = document.getElementById('publishBtn');
+const statusEl = document.getElementById('status');
+
+// Embedded configuration: users only need to sign in with Google.
+// These values are intentionally not read from localStorage, so an old browser
+// configuration cannot redirect this friend-ready build to another sheet.
+clientIdEl.value = DEFAULT_CLIENT_ID;
+sheetUrlEl.value = DEFAULT_SHEET_URL;
+sheetNameEl.value = DEFAULT_SHEET_NAME;
+photoFolderEl.value = DEFAULT_PHOTO_FOLDER;
+
+let selectedPlayer = PLAYERS[0];
+let stat1 = '';
+let stat2 = '';
+let seasonChoice = '';
+
+function setActive(buttons, activeButton){
+  buttons.forEach(btn => btn.classList.toggle('active', btn === activeButton));
+}
+
+const playerBtns = [...document.querySelectorAll('.player-btn')];
+playerBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedPlayer = btn.dataset.player;
+    setActive(playerBtns, btn);
+    updatePreview();
+  });
+});
+setActive(playerBtns, playerBtns[0]);
+
+function wireStatGroup(groupName){
+  const buttons = [...document.querySelectorAll(`[data-group="${groupName}"] .stat-btn`)];
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const current = groupName === 'stat1' ? stat1 : stat2;
+      const next = current === btn.dataset.value ? '' : btn.dataset.value;
+      if (groupName === 'stat1') stat1 = next;
+      else stat2 = next;
+      buttons.forEach(b => b.classList.toggle('active', b.dataset.value === next));
+      updatePreview();
+    });
+  });
+}
+wireStatGroup('stat1');
+wireStatGroup('stat2');
+
+const seasonBtns = [...document.querySelectorAll('.season-btn')];
+seasonBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const clicked = btn.dataset.season;
+    seasonChoice = seasonChoice === clicked ? '' : clicked;
+    seasonBtns.forEach(b => b.classList.toggle('active', b.dataset.season === seasonChoice));
+    customSeasonWrapEl.style.display = seasonChoice === '__custom__' ? 'block' : 'none';
+    if (seasonChoice === '__custom__') setTimeout(() => customSeasonEl.focus(),0);
+    updatePreview();
+  });
+});
+
+[value1El,value2El,customSeasonEl].forEach(el => el.addEventListener('input', updatePreview));
+
+function extractSheetId(urlOrId){
+  const match = urlOrId.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  return match ? match[1] : urlOrId.trim();
+}
+
+function playerSlug(name){
+  return name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+}
+
+function getSeasonLabel(){
+  if (seasonChoice === '__custom__') return customSeasonEl.value.trim();
+  return seasonChoice;
+}
+
+function computeLine(s1,v1,s2,v2,seasonLabel){
+  const parts = [];
+  if (s1) parts.push((v1 ? v1 + ' ' : '') + s1);
+  if (s2) parts.push((v2 ? v2 + ' ' : '') + s2);
+  let line = parts.join(', ');
+
+  if (seasonLabel) {
+    if (!line) return seasonLabel;
+    if (seasonLabel === 'Last Week') return `Last Week: ${line}`;
+    if (seasonLabel === '2025' || seasonLabel === '2026') return `${seasonLabel} Season: ${line}`;
+    return `${seasonLabel}: ${line}`;
+  }
+  return line;
+}
+
+function buildRow(){
+  const v1 = value1El.value.trim();
+  const v2 = value2El.value.trim();
+  const seasonLabel = getSeasonLabel();
+  const line = computeLine(stat1,v1,stat2,v2,seasonLabel);
+  const folder = photoFolderEl.value.trim();
+  const photoPath = folder ? `${folder}\\${playerSlug(selectedPlayer)}.png` : '';
+
+  // Same StatSplasher A:H column order:
+  // Player, Stat1, Value1, Stat2, Value2, Season, Line, PhotoPath
+  // Ad Message (column I) is intentionally left untouched, matching the old app when
+  // "Update Ad Message" was unchecked.
+  return [
+    selectedPlayer,
+    stat1,
+    stat1 ? v1 : '',
+    stat2,
+    stat2 ? v2 : '',
+    seasonLabel,
+    line,
+    photoPath
+  ];
+}
+
+function updatePreview(){
+  const row = buildRow();
+  const line = row[6];
+  previewEl.textContent = `${selectedPlayer}\n${line || '—'}`;
+}
+updatePreview();
+
+// --- Google sign-in: same direct OAuth token flow as original StatSplasher ---
+let tokenClient = null;
+let accessToken = null;
+
+function ensureTokenClient(){
+  if (!clientIdEl.value.trim()) {
+    statusEl.textContent = 'Google sign-in configuration is missing.';
+    statusEl.className = 'status err';
+    setupPanel.setAttribute('open','open');
+    return null;
+  }
+  if (!window.google || !google.accounts || !google.accounts.oauth2) {
+    statusEl.textContent = 'Google sign-in is still loading. Try again.';
+    statusEl.className = 'status err';
+    return null;
+  }
+  if (!tokenClient || tokenClient._clientId !== clientIdEl.value.trim()) {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientIdEl.value.trim(),
+      scope: 'https://www.googleapis.com/auth/spreadsheets',
+      callback: (resp) => {
+        if (resp.error) {
+          statusEl.textContent = 'Sign-in failed: ' + resp.error;
+          statusEl.className = 'status err';
+          return;
+        }
+        accessToken = resp.access_token;
+        statusEl.textContent = 'Signed in. Ready to publish.';
+        statusEl.className = 'status ok';
+      }
+    });
+    tokenClient._clientId = clientIdEl.value.trim();
+  }
+  return tokenClient;
+}
+
+signInBtn.addEventListener('click', () => {
+  const tc = ensureTokenClient();
+  if (!tc) return;
+  tc.requestAccessToken({prompt: accessToken ? '' : 'consent'});
+});
+
+async function publish(){
+  if (!accessToken) {
+    statusEl.textContent = 'Sign in with Google first.';
+    statusEl.className = 'status err';
+    return;
+  }
+
+  const sheetId = extractSheetId(sheetUrlEl.value.trim());
+  if (!sheetId) {
+    statusEl.textContent = 'Google Sheet configuration is missing.';
+    statusEl.className = 'status err';
+    setupPanel.setAttribute('open','open');
+    return;
+  }
+
+  const sheetName = sheetNameEl.value.trim() || 'Sheet1';
+  const writeValues = buildRow();
+  const range = `${sheetName}!A2:H2`;
+
+  publishBtn.disabled = true;
+  statusEl.textContent = 'Publishing...';
+  statusEl.className = 'status';
+
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`;
+    const res = await fetch(url, {
+      method:'PUT',
+      headers:{
+        'Authorization':`Bearer ${accessToken}`,
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({values:[writeValues]})
+    });
+
+    if (res.status === 401) {
+      accessToken = null;
+      statusEl.textContent = 'Session expired - sign in with Google again.';
+      statusEl.className = 'status err';
+      return;
+    }
+    if (!res.ok) {
+      const body = await res.text();
+      statusEl.textContent = `Publish failed (HTTP ${res.status}): ${body}`;
+      statusEl.className = 'status err';
+      return;
+    }
+
+    statusEl.textContent = 'Published.';
+    statusEl.className = 'status ok';
+  } catch(err) {
+    statusEl.textContent = 'Network error: ' + err.message;
+    statusEl.className = 'status err';
+  } finally {
+    publishBtn.disabled = false;
+  }
+}
+
+publishBtn.addEventListener('click', publish);
+</script>
+</body>
+</html>
