@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PTV Quick Stats - Offense / Defense / Special Teams</title>
+<script id="googleGsiScript" src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root{--bg:#101619;--panel:#1a2327;--panel2:#11181b;--line:#304046;--text:#eef3f5;--muted:#92a4ab;--accent:#62b6a6;--accent-dark:#35766b;--danger:#e58a8a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;padding:16px}
+.app{max-width:760px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+h1{margin:0;text-align:center;font-size:21px;font-weight:750;letter-spacing:.02em}.sub{text-align:center;color:var(--muted);font-size:12px;margin:5px 0 18px}
+.section{margin:0 0 18px}.section-title{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px}
+.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:18px}.player-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+button{font:inherit;color:var(--text);border:1px solid var(--line);background:#141d21;border-radius:8px;cursor:pointer;font-weight:700;touch-action:manipulation}
+button:hover{border-color:var(--accent)}button.active{background:var(--accent-dark);border-color:var(--accent);box-shadow:0 0 0 1px rgba(98,182,166,.2) inset}button:disabled{opacity:.5;cursor:not-allowed}
+.mode-btn{min-height:46px;padding:8px 6px;font-size:13px}.player-btn{min-height:62px;padding:8px 4px;font-size:12px;line-height:1.15}.player-btn .first{display:block;font-size:10px;font-weight:600;color:#c2d0d4;margin-bottom:2px}.player-btn .last{display:block;font-size:12px}
+.stat-pair{display:grid;grid-template-columns:1fr 108px;gap:8px;align-items:stretch;margin-bottom:12px}.stat-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.stat-btn{min-height:48px;padding:7px 5px;font-size:12px;line-height:1.1}
+input[type=text]{width:100%;min-height:48px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--text);font:inherit;font-size:18px;font-weight:700;padding:9px 10px;outline:none}input[type=text]:focus{border-color:var(--accent)}.value-input{text-align:center}
+.season-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.season-btn{min-height:44px;padding:7px 5px;font-size:12px}#customSeasonWrap{display:none;margin-top:8px}#customSeason{font-size:14px;font-weight:600;text-align:left}
+.preview{background:#0c1215;border:1px solid var(--line);border-radius:8px;padding:12px;min-height:68px;font-family:"SF Mono","Consolas","Menlo",monospace;font-size:14px;line-height:1.45;color:var(--accent);white-space:pre-line}
+.secondary{width:100%;min-height:44px;background:#141d21;color:var(--text);margin-bottom:6px}.publish-btn{width:100%;min-height:54px;background:var(--accent-dark);border-color:var(--accent);font-size:15px;letter-spacing:.03em}.status{margin-top:10px;min-height:18px;text-align:center;color:var(--muted);font-size:12px;line-height:1.35}.status.ok{color:var(--accent)}.status.err{color:var(--danger)}.tiny-note{color:var(--muted);font-size:10px;margin-top:-5px}
+@media(max-width:560px){body{padding:8px}.app{padding:12px;border-radius:10px}.mode-grid{gap:5px;margin-bottom:14px}.mode-btn{font-size:11px;min-height:42px;padding:6px 4px}.player-grid{gap:4px}.player-btn{min-height:58px;padding:6px 2px}.player-btn .first{font-size:8px}.player-btn .last{font-size:10px}.stat-pair{grid-template-columns:1fr 82px;gap:5px}.stat-buttons{gap:5px}.stat-btn{font-size:10px;padding:6px 3px}.season-grid{gap:5px}.season-btn{font-size:10px;padding:6px 3px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>PTV Quick Stats</h1>
+  <div class="sub">Sign in, select the stats, and publish</div>
+
+  <button id="signInBtn" class="secondary" disabled>Loading Google sign-in…</button>
+
+  <div class="section" style="margin-top:18px">
+    <div class="section-title">Unit</div>
+    <div class="mode-grid">
+      <button type="button" class="mode-btn active" data-mode="offense">Offense</button>
+      <button type="button" class="mode-btn" data-mode="defense">Defense</button>
+      <button type="button" class="mode-btn" data-mode="special">Special Teams</button>
+    </div>
+
+    <div class="section-title" id="playerSectionTitle">Offense Player</div>
+    <div class="player-grid" id="playerButtons">
+      <button type="button" class="player-btn active"><span class="first"></span><span class="last"></span></button>
+      <button type="button" class="player-btn"><span class="first"></span><span class="last"></span></button>
+      <button type="button" class="player-btn"><span class="first"></span><span class="last"></span></button>
+      <button type="button" class="player-btn"><span class="first"></span><span class="last"></span></button>
+      <button type="button" class="player-btn"><span class="first"></span><span class="last"></span></button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Stat 1 / Value 1</div>
+    <div class="stat-pair">
+      <div class="stat-buttons" data-group="stat1">
+        <button type="button" class="stat-btn"></button><button type="button" class="stat-btn"></button><button type="button" class="stat-btn"></button>
+      </div>
+      <input class="value-input" type="text" id="value1" inputmode="numeric" placeholder="Value 1">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Stat 2 / Value 2</div>
+    <div class="stat-pair">
+      <div class="stat-buttons" data-group="stat2">
+        <button type="button" class="stat-btn"></button><button type="button" class="stat-btn"></button><button type="button" class="stat-btn"></button>
+      </div>
+      <input class="value-input" type="text" id="value2" inputmode="numeric" placeholder="Value 2">
+    </div>
+    <div class="tiny-note">Tap an active stat button again to clear it.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Season</div>
+    <div class="season-grid">
+      <button type="button" class="season-btn" data-season="2025">2025 Season</button>
+      <button type="button" class="season-btn" data-season="2026">2026 Season</button>
+      <button type="button" class="season-btn" data-season="Last Week">Last Week</button>
+      <button type="button" class="season-btn" data-season="__custom__">Custom</button>
+    </div>
+    <div id="customSeasonWrap"><input type="text" id="customSeason" maxlength="100" placeholder="Custom season text"></div>
+  </div>
+
+  <div class="section"><div class="section-title">Preview</div><div class="preview" id="preview"></div></div>
+  <button type="button" id="publishBtn" class="publish-btn">PUBLISH TO GOOGLE SHEET</button>
+  <div class="status" id="status">Loading Google sign-in…</div>
+</div>
+
+<script>
+'use strict';
+const UNITS={
+  offense:{label:'Offense',players:['Colton Wall','Benji Weis','Brooks Dobberstein','Brady Sandvik','Boden Behrens'],stats:['TD','Rush Yds','Receiving YDS']},
+  defense:{label:'Defense',players:['CJ Ott','Bobby Edwards','Brady Sandvik','Rex Malkowski','Bryson King'],stats:['TCK','INT','SCK']},
+  special:{label:'Special Teams',players:['Tristan Schlender','Owen Haug','Benji Weis','Reed Carey','Colton Wall'],stats:['FG','PAT','RET YDS']}
+};
+
+// Friend-ready embedded Google configuration.
+const GOOGLE_CLIENT_ID='349315213439-h4q0prsteof79gtsnfom53jft0m2tejv.apps.googleusercontent.com';
+const GOOGLE_SHEET_ID='1DMNxeo85_YkDZiR3s518uB-BE4LOziYhX9jjidoN9_k';
+const SHEET_NAME='Sheet1';
+const PHOTO_FOLDER='C:\\StatApp\\photos';
+
+const modeBtns=Array.from(document.querySelectorAll('.mode-btn'));
+const playerBtns=Array.from(document.querySelectorAll('.player-btn'));
+const stat1Btns=Array.from(document.querySelectorAll('[data-group="stat1"] .stat-btn'));
+const stat2Btns=Array.from(document.querySelectorAll('[data-group="stat2"] .stat-btn'));
+const seasonBtns=Array.from(document.querySelectorAll('.season-btn'));
+const playerSectionTitleEl=document.getElementById('playerSectionTitle');
+const value1El=document.getElementById('value1');
+const value2El=document.getElementById('value2');
+const customSeasonEl=document.getElementById('customSeason');
+const customSeasonWrapEl=document.getElementById('customSeasonWrap');
+const signInBtn=document.getElementById('signInBtn');
+const publishBtn=document.getElementById('publishBtn');
+const previewEl=document.getElementById('preview');
+const statusEl=document.getElementById('status');
+
+let currentMode='offense';
+let selectedPlayer='';
+let stat1='';
+let stat2='';
+let seasonChoice='';
+let tokenClient=null;
+let accessToken=null;
+
+function splitName(name){const p=name.trim().split(/\s+/);return {first:p.shift()||'',last:p.join(' ')||''};}
+function playerSlug(name){return name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');}
+function clearActive(buttons){buttons.forEach(b=>b.classList.remove('active'));}
+
+function setUnit(mode){
+  if(!UNITS[mode]) return;
+  currentMode=mode;
+  const unit=UNITS[mode];
+  modeBtns.forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  playerSectionTitleEl.textContent=unit.label+' Player';
+
+  playerBtns.forEach((btn,i)=>{
+    const name=unit.players[i];
+    const parts=splitName(name);
+    btn.dataset.player=name;
+    btn.querySelector('.first').textContent=parts.first;
+    btn.querySelector('.last').textContent=parts.last;
+    btn.classList.toggle('active',i===0);
+  });
+  selectedPlayer=unit.players[0];
+
+  [stat1Btns,stat2Btns].forEach(group=>group.forEach((btn,i)=>{
+    btn.dataset.value=unit.stats[i];
+    btn.textContent=unit.stats[i];
+    btn.classList.remove('active');
+  }));
+  stat1=''; stat2=''; value1El.value=''; value2El.value='';
+  updatePreview();
+}
+
+modeBtns.forEach(btn=>btn.addEventListener('click',()=>setUnit(btn.dataset.mode)));
+playerBtns.forEach(btn=>btn.addEventListener('click',()=>{
+  selectedPlayer=btn.dataset.player;
+  playerBtns.forEach(b=>b.classList.toggle('active',b===btn));
+  updatePreview();
+}));
+
+function wireStats(buttons,which){
+  buttons.forEach(btn=>btn.addEventListener('click',()=>{
+    const val=btn.dataset.value;
+    const current=which===1?stat1:stat2;
+    const next=current===val?'':val;
+    if(which===1) stat1=next; else stat2=next;
+    buttons.forEach(b=>b.classList.toggle('active',b.dataset.value===next));
+    updatePreview();
+  }));
+}
+wireStats(stat1Btns,1); wireStats(stat2Btns,2);
+
+seasonBtns.forEach(btn=>btn.addEventListener('click',()=>{
+  const clicked=btn.dataset.season;
+  seasonChoice=seasonChoice===clicked?'':clicked;
+  seasonBtns.forEach(b=>b.classList.toggle('active',b.dataset.season===seasonChoice));
+  customSeasonWrapEl.style.display=seasonChoice==='__custom__'?'block':'none';
+  if(seasonChoice==='__custom__') setTimeout(()=>customSeasonEl.focus(),0);
+  updatePreview();
+}));
+[value1El,value2El,customSeasonEl].forEach(el=>el.addEventListener('input',updatePreview));
+
+function getSeasonLabel(){return seasonChoice==='__custom__'?customSeasonEl.value.trim():seasonChoice;}
+function computeLine(s1,v1,s2,v2,season){
+  const parts=[];
+  if(s1) parts.push((v1?v1+' ':'')+s1);
+  if(s2) parts.push((v2?v2+' ':'')+s2);
+  let line=parts.join(', ');
+  if(season){
+    if(!line) return season;
+    if(season==='Last Week') return 'Last Week: '+line;
+    if(season==='2025'||season==='2026') return season+' Season: '+line;
+    return season+': '+line;
+  }
+  return line;
+}
+function buildRow(){
+  const v1=value1El.value.trim(),v2=value2El.value.trim(),season=getSeasonLabel();
+  const line=computeLine(stat1,v1,stat2,v2,season);
+  return [selectedPlayer,stat1,stat1?v1:'',stat2,stat2?v2:'',season,line,PHOTO_FOLDER+'\\'+playerSlug(selectedPlayer)+'.png'];
+}
+function updatePreview(){const row=buildRow();previewEl.textContent=selectedPlayer+'\n'+(row[6]||'—');}
+
+function googleReady(){return !!(window.google&&google.accounts&&google.accounts.oauth2);}
+function enableGoogleSignIn(){
+  signInBtn.disabled=false;
+  signInBtn.textContent='Sign in with Google';
+  if(!accessToken){statusEl.textContent='Google loaded. Ready to sign in.';statusEl.className='status';}
+}
+function waitForGoogle(){
+  if(googleReady()){enableGoogleSignIn();return;}
+  let tries=0;
+  const timer=setInterval(()=>{
+    tries++;
+    if(googleReady()){clearInterval(timer);enableGoogleSignIn();}
+    else if(tries>=40){clearInterval(timer);statusEl.textContent='Google sign-in did not load. Open this page in Chrome or Safari with internet access.';statusEl.className='status err';signInBtn.textContent='Google sign-in unavailable';}
+  },250);
+}
+
+function ensureTokenClient(){
+  if(!googleReady()){statusEl.textContent='Google sign-in is not loaded yet.';statusEl.className='status err';return null;}
+  if(!tokenClient){
+    tokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:GOOGLE_CLIENT_ID,
+      scope:'https://www.googleapis.com/auth/spreadsheets',
+      callback:(resp)=>{
+        if(resp.error){statusEl.textContent='Sign-in failed: '+resp.error;statusEl.className='status err';return;}
+        accessToken=resp.access_token;
+        statusEl.textContent='Signed in. Ready to publish.';statusEl.className='status ok';
+        signInBtn.textContent='Signed in with Google';
+      }
+    });
+  }
+  return tokenClient;
+}
+signInBtn.addEventListener('click',()=>{const tc=ensureTokenClient();if(tc)tc.requestAccessToken({prompt:accessToken?'':'consent'});});
+
+async function publish(){
+  if(!accessToken){statusEl.textContent='Sign in with Google first.';statusEl.className='status err';return;}
+  const values=buildRow();
+  const range=SHEET_NAME+'!A2:H2';
+  publishBtn.disabled=true;statusEl.textContent='Publishing…';statusEl.className='status';
+  try{
+    const url='https://sheets.googleapis.com/v4/spreadsheets/'+GOOGLE_SHEET_ID+'/values/'+encodeURIComponent(range)+'?valueInputOption=RAW';
+    const res=await fetch(url,{method:'PUT',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:[values]})});
+    if(res.status===401){accessToken=null;signInBtn.textContent='Sign in with Google';statusEl.textContent='Session expired - sign in again.';statusEl.className='status err';return;}
+    if(!res.ok){const body=await res.text();statusEl.textContent='Publish failed (HTTP '+res.status+'): '+body;statusEl.className='status err';return;}
+    statusEl.textContent='Published.';statusEl.className='status ok';
+  }catch(err){statusEl.textContent='Network error: '+err.message;statusEl.className='status err';}
+  finally{publishBtn.disabled=false;}
+}
+publishBtn.addEventListener('click',publish);
+
+setUnit('offense');
+waitForGoogle();
+</script>
+</body>
+</html>
